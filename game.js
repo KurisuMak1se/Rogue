@@ -59,9 +59,8 @@ Game.prototype.generateMap = function() {
             rooms.push({x: roomX, y: roomY, width: roomWidth, height: roomHeight});
         }
     }
-    
     // Создание проходов
-    this.createCorridors(rooms);
+    this.createConnectedCorridors(rooms);
     
     // Размещение мечей и зелий
     this.placeItems(2, 'SW'); // Мечи
@@ -74,25 +73,113 @@ Game.prototype.generateMap = function() {
     this.placeEnemies(10);
 };
 
-Game.prototype.createCorridors = function(rooms) {
+Game.prototype.createConnectedCorridors = function(rooms) {
+
+    this.connectRoomsWithCorridors(rooms);
+    
+    this.addRandomPassages();
+};
+
+// Функция соединения комнат коридорами
+Game.prototype.connectRoomsWithCorridors = function(rooms) {
+    if (rooms.length < 2) return;
+    
+
+    for (var i = 0; i < rooms.length - 1; i++) {
+        var room1 = rooms[i];
+        var room2 = rooms[i + 1];
+        
+        var center1 = {
+            x: Math.floor(room1.x + room1.width / 2),
+            y: Math.floor(room1.y + room1.height / 2)
+        };
+        var center2 = {
+            x: Math.floor(room2.x + room2.width / 2),
+            y: Math.floor(room2.y + room2.height / 2)
+        };
+        
+
+        this.createHorizontalCorridor(center1.x, center2.x, center1.y);
+        this.createVerticalCorridor(center1.y, center2.y, center2.x);
+    }
+    
+};
+
+// Создание горизонтального коридора
+Game.prototype.createHorizontalCorridor = function(x1, x2, y) {
+    var start = Math.min(x1, x2);
+    var end = Math.max(x1, x2);
+    
+    for (var x = start; x <= end; x++) {
+        if (x >= 0 && x < this.mapWidth && y >= 0 && y < this.mapHeight) {
+            this.map[y][x] = '.';
+            if (y > 0) this.map[y-1][x] = '.';
+            if (y < this.mapHeight - 1) this.map[y+1][x] = '.';
+        }
+    }
+};
+
+// Создание вертикального коридора
+Game.prototype.createVerticalCorridor = function(y1, y2, x) {
+    var start = Math.min(y1, y2);
+    var end = Math.max(y1, y2);
+    
+    for (var y = start; y <= end; y++) {
+        if (x >= 0 && x < this.mapWidth && y >= 0 && y < this.mapHeight) {
+            this.map[y][x] = '.';
+            if (x > 0) this.map[y][x-1] = '.';
+            if (x < this.mapWidth - 1) this.map[y][x+1] = '.';
+        }
+    }
+};
+
+// Добавление случайных проходов
+Game.prototype.addRandomPassages = function() {
     // Горизонтальные проходы
-    var horizontalPassages = this.getRandomInt(3, 5);
+    var horizontalPassages = this.getRandomInt(2, 4);
     for (var i = 0; i < horizontalPassages; i++) {
         var y = this.getRandomInt(1, this.mapHeight - 2);
+
+        var hasConnections = false;
         for (var x = 0; x < this.mapWidth; x++) {
-            this.map[y][x] = '.';
+            if (this.map[y][x] === '.' || 
+                (y > 0 && this.map[y-1][x] === '.') || 
+                (y < this.mapHeight - 1 && this.map[y+1][x] === '.')) {
+                hasConnections = true;
+                break;
+            }
+        }
+        
+        if (hasConnections) {
+            for (var x = 0; x < this.mapWidth; x++) {
+                this.map[y][x] = '.';
+            }
         }
     }
     
     // Вертикальные проходы
-    var verticalPassages = this.getRandomInt(3, 5);
+    var verticalPassages = this.getRandomInt(2, 4);
     for (var i = 0; i < verticalPassages; i++) {
         var x = this.getRandomInt(1, this.mapWidth - 2);
+
+        var hasConnections = false;
         for (var y = 0; y < this.mapHeight; y++) {
-            this.map[y][x] = '.';
+            if (this.map[y][x] === '.' || 
+                (x > 0 && this.map[y][x-1] === '.') || 
+                (x < this.mapWidth - 1 && this.map[y][x+1] === '.')) {
+                hasConnections = true;
+                break;
+            }
+        }
+        
+        if (hasConnections) {
+            for (var y = 0; y < this.mapHeight; y++) {
+                this.map[y][x] = '.';
+            }
         }
     }
 };
+
 
 Game.prototype.placeItems = function(count, type) {
     for (var i = 0; i < count; i++) {
